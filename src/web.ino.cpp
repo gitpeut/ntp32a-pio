@@ -6,7 +6,7 @@
 struct UPacket{
   public:
   size_t index;
-  uint8_t Data[4096]; 
+  uint8_t *Data; 
   size_t len; 
   bool final; 
 };
@@ -332,10 +332,8 @@ sprintf( uptime, "%d %02d:%02d:%02d", updays, uphr, upminute,upsec);
   output += compile_time;
   output += "\",\r\n";
 
-  String srcfile = String( sourcefile );
-  srcfile.replace("\\", "\\\\");
-  output += "\t\"Sourcefile\" : \"";
-  output += srcfile;
+  output += "\t\"Project\" : \"";
+  output += project;
   output += "\",\r\n";
 
   output += "\t\"uptime\" : \"";
@@ -596,7 +594,7 @@ void startWiFi(){
 //------------------------------------------------------------------------
 void UpdateTask(void *param){
     UPacket *upacket = (UPacket *) calloc( 1 , sizeof( UPacket ) );
-    size_t written;
+    size_t written, total=0;
     
     for (;;) {
       
@@ -610,11 +608,6 @@ void UpdateTask(void *param){
                 getFS();
           }
 
-          if ( upacket->len > sizeof(upacket->Data) ){
-            Serial.printf("Erroneous size of data: %d, ignored\n", sizeof(upacket->Data) );
-            continue;
-          }
-
           UpdateError = false;
           written = Update.write(upacket->Data, upacket->len);
           if ( written != upacket->len) {
@@ -622,10 +615,12 @@ void UpdateTask(void *param){
                Serial.printf("written %d bytes, should be %d\n", written, upacket->len);
                Update.printError(Serial);               
           }else{
-               Serial.printf("Written %d\n", written );
+              total += written;
+              //Serial.printf("Written %d\n", written );
           }
 
           if ( UpdateError ) {
+            Serial.printf("\nUpdate FAILED during upload after receiving %d packets\n", packetCount);
             loseFS();
             break;
           }
@@ -633,11 +628,11 @@ void UpdateTask(void *param){
 
       if ( upacket->final ){
               if (!Update.end(true)){
-                Update.printError(Serial);
+                Serial.printf("\nUpdate FAILED after writing %d bytes in %d packets\n", total, packetCount);
               } else {
-                Serial.println("\nUpdate complete");
-                Serial.flush();
+                Serial.printf("\nUpdate complete, written %d bytes in %d packets\n", total, packetCount );
               }
+              Serial.flush();
               loseFS();
       }
 
@@ -652,7 +647,6 @@ void UpdateTask(void *param){
 
 void handleUpdate(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
   
-  //uint32_t free_space = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
   UPacket upacket;
   
   if (!index){
@@ -672,15 +666,10 @@ void handleUpdate(AsyncWebServerRequest *request, const String& filename, size_t
         
   }
 
-  //UPacket upacket = UPacket( index, data, len, final);
-
   upacket.index = index;
   upacket.len = len;
   upacket.final = final;
-
-  for(int i=0; i< len && i < sizeof( upacket.Data ); ++ i){
-    upacket.Data[i] = *(data+i);
-  }
+  upacket.Data = data;
   
   packetCount++;
   //Serial.printf("Packet #%d Update index %d, size %d, final %d\n", packetCount, index, len, final);
