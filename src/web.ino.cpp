@@ -581,7 +581,7 @@ void startWiFi(){
         ++point;
         Serial.print(".");
         if ( point%32 == 0 )Serial.printf("%d\n",point);
-
+        if ( point > 1024 ) ESP.restart();
     }
 
         
