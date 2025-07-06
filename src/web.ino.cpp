@@ -558,22 +558,11 @@ void stopFSXServer(){
 //----------------------------------------------------------------------------
 void startWiFi(){
 
-     static int started = 0;
+    Serial.printf( "Connecting to Wifi network %s, password %s\n", ssid, password);
 
-     if ( WiFi.status() != WL_CONNECTED && started == 0){
-
-        //WiFiEventId_t eventID = 
-        WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info){
-            WiFi.setHostname( esphostname );
-            //tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, esphostname);
-        //2.0.0 doesn't recognize SYSTEM_EVENTxxxx?    }, WiFiEvent_t::SYSTEM_EVENT_STA_CONNECTED);
-         }, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
-        started++;
-        Serial.printf( "Connecting to Wifi network %s, password %s, started %d\n", ssid, password, started);
-
-        WiFi.setSleep(WIFI_PS_NONE);
-        WiFi.begin(ssid, password);
-    }
+    WiFi.setHostname( esphostname );
+    WiFi.setSleep(WIFI_PS_NONE);
+    WiFi.begin(ssid, password);
 
     int point = 0;
     while (WiFi.status() != WL_CONNECTED) {

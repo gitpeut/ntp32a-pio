@@ -10,7 +10,7 @@
 #include <ArduinoNvs.h>
 
 const char* esphostname = "ntp32a";
-const char* project = "ntp32a-pio/1.1";
+const char* project = "ntp32a-pio/1.2";
 const char* compile_time = __DATE__ " " __TIME__;
 
 String ip;
